@@ -1,6 +1,6 @@
 ---
 title: 'Weekly Exercises #3'
-author: "Put your name here"
+author: "Jenny Li"
 output: 
   html_document:
     keep_md: TRUE
@@ -12,7 +12,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
@@ -21,6 +21,8 @@ library(gardenR)       # for Lisa's garden data
 library(lubridate)     # for date manipulation
 library(ggthemes)      # for even more plotting themes
 library(geofacet)      # for special faceting with US map layout
+library(dplyr)
+Sys.setlocale("LC_TIME", "English")
 theme_set(theme_minimal())       # My favorite ggplot() theme :)
 ```
 
@@ -81,21 +83,60 @@ These exercises will reiterate what you learned in the "Expanding the data wrang
   1. Summarize the `garden_harvest` data to find the total harvest weight in pounds for each vegetable and day of week (HINT: use the `wday()` function from `lubridate`). Display the results so that the vegetables are rows but the days of the week are columns.
 
 ```{r}
+totalGardenHarvest <- garden_harvest %>%
+  mutate(wt_lbs = weight * 0.00220462) %>%
+  mutate(weekday = wday(
+    ymd(date),
+    label = TRUE,
+    abbr = TRUE,
+    week_start = 7
+  )) %>%
+  group_by(vegetable, weekday) %>%
+  summarise(weekday_wt_lbs = sum(wt_lbs)) %>%
+  mutate(total_wt_lbs = sum(weekday_wt_lbs)) %>%
+  pivot_wider(names_from = weekday, values_from = weekday_wt_lbs) %>%
+  select("vegetable",
+         "Mon",
+         "Tue",
+         "Wed",
+         "Thu",
+         "Fri",
+         "Sat",
+         "Sun",
+         "total_wt_lbs") 
 
 ```
 
   2. Summarize the `garden_harvest` data to find the total harvest in pound for each vegetable variety and then try adding the plot from the `garden_planting` table. This will not turn out perfectly. What is the problem? How might you fix it?
 
 ```{r}
-
+varGardenHarvest <- garden_harvest %>%
+  mutate(wt_lbs = weight * 0.00220462) %>%
+  group_by(vegetable, variety) %>%
+  summarise(to_varwt_lbs = sum(wt_lbs)) %>%
+  left_join(garden_planting,
+            by = c("vegetable", "variety"))
 ```
+> Some vegetables, although the harvest date and weight are all the same, there are more than one different plots. This will be a problem because there will be a row for each plot. This will happen every time that vegetable variety is harvested. There were also vegetable varieties that were planted on multiple dates. This will lead to a similar problem.Thus, in order to solve the problem, we can summarize the `garden_planting` dataset first. Then instead of lef_join(), we can use full_join().
+
 
   3. I would like to understand how much money I "saved" by gardening, for each vegetable type. Describe how I could use the `garden_harvest` and `garden_spending` datasets, along with data from somewhere like [this](https://products.wholefoodsmarket.com/search?sort=relevance&store=10542) to answer this question. You can answer this in words, referencing various join functions. You don't need R code but could provide some if it's helpful.
 
   4. Subset the data to tomatoes. Reorder the tomato varieties from smallest to largest first harvest date. Create a barplot of total harvest in pounds for each variety, in the new order.CHALLENGE: add the date near the end of the bar. (This is probably not a super useful graph because it's difficult to read. This is more an exercise in using some of the functions you just learned.)
 
 ```{r}
+tGardenHarvest <- garden_harvest %>%
+  filter(vegetable == "tomatoes") %>%
+  mutate(wt_lbs = weight * 0.00220462) %>%
+  group_by(variety) %>%
+  summarise(total_weight = sum(weight),
+            first_plant_date = min(date)) %>%
+  arrange(ymd(first_plant_date)) 
 
+tGardenHarvest %>% 
+ ggplot(aes(x=total_weight,y = variety))+
+  labs(title = "Harvest In Pounds for Each Variety of Tomatoes",x=NULL, y="Variety") +
+  geom_bar(color = "white",fill="deepskyblue4",stat = "identity")
 ```
 
   5. In the `garden_harvest` data, create two new variables: one that makes the varieties lowercase and another that finds the length of the variety name. Arrange the data by vegetable and length of variety name (smallest to largest), with one row for each vegetable variety. HINT: use `str_to_lower()`, `str_length()`, and `distinct()`.
