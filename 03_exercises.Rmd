@@ -117,10 +117,19 @@ varGardenHarvest <- garden_harvest %>%
   left_join(garden_planting,
             by = c("vegetable", "variety"))
 ```
-> Some vegetables, although the harvest date and weight are all the same, there are more than one different plots. This will be a problem because there will be a row for each plot. This will happen every time that vegetable variety is harvested. There were also vegetable varieties that were planted on multiple dates. This will lead to a similar problem.Thus, in order to solve the problem, we can summarize the `garden_planting` dataset first. Then instead of lef_join(), we can use full_join().
+>  Some vegetables, although the harvest date and weight are all the same, there are more than one different plots. This will be a problem because there will be a row for each plot. This will happen every time that vegetable variety is harvested. There were also vegetable varieties that were planted on multiple dates. This will lead to a similar problem.Thus, in order to solve the problem, we can summarize the `garden_planting` dataset first. Then instead of lef_join(), we can use full_join().
+
 
 
   3. I would like to understand how much money I "saved" by gardening, for each vegetable type. Describe how I could use the `garden_harvest` and `garden_spending` datasets, along with data from somewhere like [this](https://products.wholefoodsmarket.com/search?sort=relevance&store=10542) to answer this question. You can answer this in words, referencing various join functions. You don't need R code but could provide some if it's helpful.
+  
+>
+1.In garden_harvest, group_by(vegetable, variety) and then summarize the weight of them.(calculate the total harvest weight of each variety in each vegetable)
+2.join the two dataset 
+3.joining the data from the grocery store to get the corresponding price for the vegetable
+4.compute the gross saving by times the grams with the price in the grocery shop of a variety of vegetable
+5.use the gross saving to minus the corresponding spending of the variety to get the actually saving for each variety
+6.sum the actually saving to get the overall saving
 
   4. Subset the data to tomatoes. Reorder the tomato varieties from smallest to largest first harvest date. Create a barplot of total harvest in pounds for each variety, in the new order.CHALLENGE: add the date near the end of the bar. (This is probably not a super useful graph because it's difficult to read. This is more an exercise in using some of the functions you just learned.)
 
@@ -134,7 +143,7 @@ tGardenHarvest <- garden_harvest %>%
   arrange(ymd(first_plant_date)) 
 
 tGardenHarvest %>% 
- ggplot(aes(x=total_weight,y = variety))+
+ ggplot(aes(x=total_weight,y = fct_reorder(variety,first_plant_date)))+
   labs(title = "Harvest In Pounds for Each Variety of Tomatoes",x=NULL, y="Variety") +
   geom_bar(color = "white",fill="deepskyblue4",stat = "identity")
 ```
@@ -142,13 +151,22 @@ tGardenHarvest %>%
   5. In the `garden_harvest` data, create two new variables: one that makes the varieties lowercase and another that finds the length of the variety name. Arrange the data by vegetable and length of variety name (smallest to largest), with one row for each vegetable variety. HINT: use `str_to_lower()`, `str_length()`, and `distinct()`.
   
 ```{r}
-
+orderGardenHarvest<-garden_harvest %>% 
+  mutate(low_case_var=str_to_lower(variety)) %>% 
+  mutate(length_var=str_length(variety)) %>% 
+  group_by(low_case_var) %>% 
+  arrange(vegetable,length_var) %>% 
+  distinct(vegetable,low_case_var, .keep_all = TRUE) %>% 
+  select(vegetable,low_case_var,length_var )
 ```
 
   6. In the `garden_harvest` data, find all distinct vegetable varieties that have "er" or "ar" in their name. HINT: `str_detect()` with an "or" statement (use the | for "or") and `distinct()`.
 
 ```{r}
-
+filGardenHarvest<-garden_harvest %>% 
+  mutate(var_name=str_detect(variety,"er|ar")) %>% 
+  filter(var_name==TRUE) %>% 
+  distinct(vegetable, variety)
 ```
 
 
@@ -188,7 +206,10 @@ It's natural to expect that bikes are rented more at some times of day, some day
   7. A density plot, which is a smoothed out histogram, of the events versus `sdate`. Use `geom_density()`.
   
 ```{r}
-
+Trips %>% 
+  ggplot()+
+  geom_density(aes(x=sdate))+
+labs(title = "Events Vs The Time The Rental Started",x=NULL, y=NULL)
 ```
   
   8. A density plot of the events versus time of day.  You can use `mutate()` with `lubridate`'s  `hour()` and `minute()` functions to extract the hour of the day and minute within the hour from `sdate`. Hint: A minute is 1/60 of an hour, so create a variable where 3:30 is 3.5 and 3:45 is 3.75.
@@ -283,6 +304,6 @@ This problem uses the data from the Tidy Tuesday competition this week, `kids`. 
 
   21. In this exercise, you are going to try to replicate the graph below, created by Georgios Karamanis. I'm sure you can find the exact code on GitHub somewhere, but **DON'T DO THAT!** You will only be graded for putting an effort into this problem. So, give it a try and see how far you can get without doing too much googling. HINT: use `facet_geo()`. The graphic won't load below since it came from a location on my computer. So, you'll have to reference the original html on the moodle page to see it.
   
-![](kids_data_karamanis.jpeg)
+
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
