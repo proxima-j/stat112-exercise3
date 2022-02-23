@@ -105,6 +105,8 @@ totalGardenHarvest <- garden_harvest %>%
          "Sun",
          "total_wt_lbs") 
 
+totalGardenHarvest
+
 ```
 
   2. Summarize the `garden_harvest` data to find the total harvest in pound for each vegetable variety and then try adding the plot from the `garden_planting` table. This will not turn out perfectly. What is the problem? How might you fix it?
@@ -117,7 +119,7 @@ varGardenHarvest <- garden_harvest %>%
   left_join(garden_planting,
             by = c("vegetable", "variety"))
 ```
->  Some vegetables, although the harvest date and weight are all the same, there are more than one different plots. This will be a problem because there will be a row for each plot. This will happen every time that vegetable variety is harvested. There were also vegetable varieties that were planted on multiple dates. This will lead to a similar problem.Thus, in order to solve the problem, we can summarize the `garden_planting` dataset first. Then instead of lef_join(), we can use full_join().
+>  Some vegetables, although the harvest date and weight are all the same, there are more than one different plots. This will be a problem because there will be a row for each plot. This will happen every time that vegetable variety is harvested. There were also vegetable varieties that were planted on multiple dates. This will lead to a similar problem.It is hard to decide how to fix the problem at this point, since we haven’t figured out which plots the weights belong to.
 
 
 
@@ -206,22 +208,50 @@ It's natural to expect that bikes are rented more at some times of day, some day
   7. A density plot, which is a smoothed out histogram, of the events versus `sdate`. Use `geom_density()`.
   
 ```{r}
-Trips %>% 
-  ggplot()+
-  geom_density(aes(x=sdate))+
-labs(title = "Events Vs The Time The Rental Started",x=NULL, y=NULL)
+Trips %>%
+  ggplot() +
+  geom_density(
+    aes(x = sdate),
+    fill = "deepskyblue4",
+    color = "#e9ecef",
+    alpha = 0.9,
+    adjust = 0.5
+  ) +
+  labs(title = "Distrubution of Rental Started Time(Date) For Events", x = NULL, y =
+         NULL)
 ```
+> The density plot shows a multimodal right-skewed distribution of the rental started time of the events. It covers the events which the rental started time is between Oct and Jan. In addition since the graph is right-skewed, it seems that the more events prefer to start the rental time during Oct till Dec, instead of Dec till Jan.
   
   8. A density plot of the events versus time of day.  You can use `mutate()` with `lubridate`'s  `hour()` and `minute()` functions to extract the hour of the day and minute within the hour from `sdate`. Hint: A minute is 1/60 of an hour, so create a variable where 3:30 is 3.5 and 3:45 is 3.75.
   
 ```{r}
+hMTrip <- Trips %>%
+  mutate(times = hour(sdate) + minute(sdate) / 60)
 
+hMTrip %>%
+  ggplot() +
+  geom_density(
+    aes(x = times),
+    fill = "deepskyblue4",
+    color = "#e9ecef",
+    alpha = 0.9,
+    adjust = 0.5
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL)
 ```
+>  This density plot shows a multimodal slightly left-skewed distribution of started rental time for events in a day. Since there are only 24 hours in a day, it covers from 0:00 till 24:00. The graph shows that it is relatively rare for the events to start their rental time between 0:00 to 5：00.
   
   9. A bar graph of the events versus day of the week. Put day on the y-axis.
   
 ```{r}
-
+wTrip<-Trips %>% 
+   mutate(weekday = wday(
+    ymd(sdate),
+    label = TRUE,
+    abbr = TRUE,
+    week_start = 7
+  ))
 ```
   
   10. Facet your graph from exercise 8. by day of the week. Is there a pattern?
@@ -278,16 +308,63 @@ In this section, we'll use the data from 2022-02-01 Tidy Tuesday. If you didn't 
 
   17. The final product of this exercise will be a graph that has breed on the y-axis and the sum of the numeric ratings in the `breed_traits` dataset on the x-axis, with a dot for each rating. First, create a new dataset called `breed_traits_total` that has two variables -- `Breed` and `total_rating`. The `total_rating` variable is the sum of the numeric ratings in the `breed_traits` dataset (we'll use this dataset again in the next problem). Then, create the graph just described. Omit Breeds with a `total_rating` of 0 and order the Breeds from highest to lowest ranked. You may want to adjust the `fig.height` and `fig.width` arguments inside the code chunk options (eg. `{r, fig.height=8, fig.width=4}`) so you can see things more clearly - check this after you knit the file to assure it looks like what you expected.
 
-```{r}
+```{r,fig.height=17,fig.width=10}
+breed_traits_total<-breed_traits %>% 
+ select(-c("Coat Type", "Coat Length")) %>% 
+  pivot_longer(!Breed, names_to = "level", values_to = "rating") %>% 
+  group_by(Breed) %>% 
+  summarise(total_rating=sum(rating))
+
+breed_traits_total %>%
+  filter(total_rating != 0) %>%
+  arrange(desc(total_rating)) %>%
+  ggplot(aes(y = fct_reorder(Breed, total_rating), x = total_rating)) +
+  geom_point() +
+  labs(title = "Breeds Ranked BY Their Ratings", x = "Rating", y =
+         "Breeds") +
+  theme(
+    plot.title = element_text(hjust = 0.1, face = "bold", size = 15),
+    axis.text.y = element_text(
+      face = "bold",
+      hjust = 1,
+      vjust = 1
+    ),
+    panel.spacing.x = unit(0.75, "cm")
+  )
+
 
 ```
 
   18. The final product of this exercise will be a graph with the top-20 dogs in total ratings (from previous problem) on the y-axis, year on the x-axis, and points colored by each breed's ranking for that year (from the `breed_rank_all` dataset). The points within each breed will be connected by a line, and the breeds should be arranged from the highest median rank to lowest median rank ("highest" is actually the smallest numer, eg. 1 = best). After you're finished, think of AT LEAST one thing you could you do to make this graph better. HINTS: 1. Start with the `breed_rank_all` dataset and pivot it so year is a variable. 2. Use the `separate()` function to get year alone, and there's an extra argument in that function that can make it numeric. 3. For both datasets used, you'll need to `str_squish()` Breed before joining. 
   
 ```{r}
+newb_breed_traits_total <- breed_traits_total %>%
+  mutate(breedR = str_squish(Breed)) %>%
+  slice_max(n = 20, order_by = total_rating)
 
+new_breed_rank_all <- breed_rank_all %>%
+  pivot_longer(cols = `2013 Rank`:`2020 Rank`,
+               names_to = "year",
+               values_to = "rank") %>%
+  separate(
+    col = year,
+    into = c("years", NULL),
+    sep = " ",
+    convert = TRUE
+  ) %>%
+  mutate(breedR = str_squish(Breed)) %>%
+  inner_join(newb_breed_traits_total,
+             by = "breedR")
+
+new_breed_rank_all %>% 
+  ggplot(aes(y= fct_rev(fct_reorder(breedR, rank, median)), x=years))+
+  geom_point(aes(color=rank)) +
+  geom_line()+
+  labs(title = "Breeds Ranked By Years", x = NULL, y =
+         "Breeds")
 ```
-  
+> Assigned different colors for each rank manually. So that the rank could be more explicit and easier for the viewer to locate. For example, red for the highest rank, blue for the second highest.
+
   19. Create your own! Requirements: use a `join` or `pivot` function (or both, if you'd like), a `str_XXX()` function, and a `fct_XXX()` function to create a graph using any of the dog datasets. One suggestion is to try to improve the graph you created for the Tidy Tuesday assignment. If you want an extra challenge, find a way to use the dog images in the `breed_rank_all` file - check out the `ggimage` library and [this resource](https://wilkelab.org/ggtext/) for putting images as labels.
   
 ```{r}
