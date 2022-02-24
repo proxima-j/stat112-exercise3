@@ -21,6 +21,7 @@ library(lubridate)     # for date manipulation
 library(ggthemes)      # for even more plotting themes
 library(geofacet)      # for special faceting with US map layout
 library(dplyr)
+library(imputeTS)
 Sys.setlocale("LC_TIME", "English")
 ```
 
@@ -257,9 +258,7 @@ hMTrip %>%
   geom_density(
     aes(x = times),
     fill = "deepskyblue4",
-    color = "#e9ecef",
-    alpha = 0.9,
-    adjust = 0.5
+    color = "#e9ecef"
   ) +
   labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
          NULL)
@@ -272,47 +271,177 @@ hMTrip %>%
   
 
 ```r
-wTrip<-Trips %>% 
-   mutate(weekday = wday(
-    ymd(sdate),
-    label = TRUE,
-    abbr = TRUE,
-    week_start = 7
-  ))
+wTrip <- Trips %>%
+  mutate(weekday = wday(sdate,
+         label = TRUE,
+         abbr = TRUE))
+
+wTrip %>%
+  ggplot()+
+  geom_bar(aes(y=fct_rev(weekday)),color = "white",fill="deepskyblue4")+
+  labs(title = "Number of Events On Each day of Week",x=NULL, y=NULL) 
 ```
+
+![](03_exercises_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+>According to the bar plot, most trips occurred on Friday (about 1500 times) and least on Sunday (about 1250 times). However, the number of trips each day of the week does not show much difference even between Fri and Sun.
   
   10. Facet your graph from exercise 8. by day of the week. Is there a pattern?
   
 
+```r
+fTrip<-hMTrip %>% 
+   mutate(weekday = wday(sdate,
+         label = TRUE,
+         abbr = TRUE))
+
+
+fTrip %>%
+  ggplot() +
+  geom_density(
+    aes(x = times),
+    fill = "deepskyblue4",
+    color = "#e9ecef"
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ weekday)+
+  theme_minimal()
+```
+
+![](03_exercises_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
+> Yes. The patterns of Saturday and Sunday are very similar which are left-skewed and bimodal. By contrast, the patterns for weekdays are multimodal and very slightly left-skewed.
   
 The variable `client` describes whether the renter is a regular user (level `Registered`) or has not joined the bike-rental organization (`Causal`). The next set of exercises investigate whether these two different categories of users show different rental behavior and how `client` interacts with the patterns you found in the previous exercises. 
 
   11. Change the graph from exercise 10 to set the `fill` aesthetic for `geom_density()` to the `client` variable. You should also set `alpha = .5` for transparency and `color=NA` to suppress the outline of the density function.
   
 
+```r
+fTrip %>%
+  ggplot() +
+  geom_density(
+    aes(x = times,fill = client),
+    color = NA,
+    alpha = 0.5,
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ weekday)
+```
+
+![](03_exercises_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+> The rental behavior for the two groups of clients is different. For the regular users who coherent with the pattern in problem 11 which patterns of weekends are different from the weekdays. By contrast, the patterns for weekdays are multimodel and very slightly left-skewed. However, for those who haven't joined the bike-rental organization, the rental behavior is very similar every day-- it shows a unimodal pattern from Sun through Mon.
 
   12. Change the previous graph by adding the argument `position = position_stack()` to `geom_density()`. In your opinion, is this better or worse in terms of telling a story? What are the advantages/disadvantages of each?
   
 
+```r
+fTrip %>%
+  ggplot() +
+  geom_density(
+    aes(x = times,fill = client),
+    color = NA,
+    alpha = 0.5,
+    position = position_stack()
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ weekday)
+```
+
+![](03_exercises_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+>In my opinion, I think it depends on the situation, since the graph in problem 11 is better for comparing the differences of distribution of times between the two groups while this one is more appropriate to look over the overall distribution and compare the proportion of the two groups at a particular time.
   
   13. In this graph, go back to using the regular density plot (without `position = position_stack()`). Add a new variable to the dataset called `weekend` which will be "weekend" if the day is Saturday or Sunday and  "weekday" otherwise (HINT: use the `ifelse()` function and the `wday()` function from `lubridate`). Then, update the graph from the previous problem by faceting on the new `weekend` variable. 
   
 
+```r
+wT<-fTrip %>%
+  mutate(weekend=ifelse(weekday%in%c("Sat","Sun"), "weekend","weekday"))
+
+wT%>%
+  ggplot() +
+  geom_density(
+    aes(x = times,fill = client),
+    color = NA,
+    alpha = 0.5
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ weekend)
+```
+
+![](03_exercises_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+>Coherent with the graphs from the previous questions-- for registered clients, it shows a multimodal pattern on weekdays and bimodal on the weekend while for casual clients it shows a unimodal pattern for both weekdays and weekends.
   
   14. Change the graph from the previous problem to facet on `client` and fill with `weekday`. What information does this graph tell you that the previous didn't? Is one graph better than the other?
   
 
+```r
+wT%>%
+  ggplot() +
+  geom_density(
+    aes(x = times,fill = weekend),
+    color = NA,
+    alpha = 0.5
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ client)
+```
+
+![](03_exercises_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+>This graph is faceted on the client, so for each graph we are able to see the rental behavior of the same group on weekdays and weekends. The casual client has a similar pattern for weekdays and weekends which is centered around noon while the registered client shows a different behavior between the weekday and weekend– centered around the communicating hours on weekdays and noon on weekends. This is better for comparing the behavior within one group. In contrast, the previous graph is better at comparing the rental behavior between the two groups for weekdays and weekends. There is no better graph between the two. This only depends on the situation, the two graphs could answer different questions.
   
 ### Spatial patterns
 
   15. Use the latitude and longitude variables in `Stations` to make a visualization of the total number of departures from each station in the `Trips` data. Use either color or size to show the variation in number of departures. We will improve this plot next week when we learn about maps!
   
 
+```r
+staTrip<-Trips %>% 
+  left_join(Stations, by=c ("sstation"="name") ) %>% 
+  group_by(lat,long) %>% 
+  summarise(EventsCount=n())
+
+staTrip %>%
+  ggplot(aes(x=long, y=lat,color=EventsCount))+
+  geom_point()+
+  scale_color_viridis_c()+
+  labs(title = "Total Number of Departures From Each Station", x = "Longtitude", y =
+         "Latitude")
+```
+
+![](03_exercises_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+> Most of the events are clustered around longitude between -77.1 and -77.0. There are several outliers on the upper left corner of the graph and the total number of departure for most of the stations were below 50 times.
   
   16. Only 14.4% of the trips in our data are carried out by casual users. Create a plot that shows which area(s) have stations with a much higher percentage of departures by casual users. What patterns do you notice? (Again, we'll improve this next week when we learn about maps).
   
 
-  
+```r
+staTrip2 <- Trips %>%
+  left_join(Stations, by = c ("sstation" = "name")) %>%
+  group_by(lat, long, client) %>%
+  summarise(numEventGroup = n()) %>%
+  mutate(totalEvent = sum(numEventGroup)) %>%
+  mutate(prop = numEventGroup / totalEvent) %>%
+  pivot_wider(names_from = client, values_from = prop) %>%
+  select(-c(Registered)) %>%
+  distinct(totalEvent, .keep_all = TRUE) %>%
+  ungroup() %>% 
+  select("lat","long","Casual")
+
+staTrip2%>%
+  ggplot(aes(x=long, y=lat,color=Casual))+
+  geom_point()+
+  scale_color_viridis_c()+
+  labs(title = "Proportion of Casual Clients' Departures From Each Station", x = "Longtitude", y =
+         "Latitude")
+```
+
+![](03_exercises_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+>There are several stations that have a large proportion of casual clients (almost 100%). In addition, there are several stations near latitude 38.9 that contain a relatively large proportion(between 0.5 to 1) of casual riders as well. Other stations except those mentioned above contain only a very small proportion of casual clients.
+
 **DID YOU REMEMBER TO GO BACK AND CHANGE THIS SET OF EXERCISES TO THE LARGER DATASET? IF NOT, DO THAT NOW.**
 
 ## Dogs!
@@ -385,10 +514,29 @@ new_breed_rank_all %>%
   19. Create your own! Requirements: use a `join` or `pivot` function (or both, if you'd like), a `str_XXX()` function, and a `fct_XXX()` function to create a graph using any of the dog datasets. One suggestion is to try to improve the graph you created for the Tidy Tuesday assignment. If you want an extra challenge, find a way to use the dog images in the `breed_rank_all` file - check out the `ggimage` library and [this resource](https://wilkelab.org/ggtext/) for putting images as labels.
   
 
+```r
+aveBreed_rank_all <- breed_rank_all %>%
+  pivot_longer(cols = `2013 Rank`:`2020 Rank`,
+               names_to = "year",
+               values_to = "rank") %>%
+  group_by(Breed) %>%
+  summarise(ave_rank = sum(rank) / 8) %>%
+  mutate(newBreed = str_to_title(Breed)) %>%
+  slice_min(n = 20, order_by = ave_rank)
+
+aveBreed_rank_all %>%
+  ggplot(aes(x = ave_rank, y = fct_rev(fct_reorder(newBreed, ave_rank)))) +
+  labs(title = "Average Rank of Breeds Between 2013 and 2020", x = "Rank", y =
+         "Breed") +
+  geom_bar(color = "white", fill = "deepskyblue4", stat = "identity")
+```
+
+![](03_exercises_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
   
 ## GitHub link
 
   20. Below, provide a link to your GitHub page with this set of Weekly Exercises. Specifically, if the name of the file is 03_exercises.Rmd, provide a link to the 03_exercises.md file, which is the one that will be most readable on GitHub.
+[Github Link](https://github.com/proxima-j/stat112-exercise3)
 
 ## Challenge problem! 
 
