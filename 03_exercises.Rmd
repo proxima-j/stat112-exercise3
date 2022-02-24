@@ -119,9 +119,9 @@ varGardenHarvest <- garden_harvest %>%
   left_join(garden_planting,
             by = c("vegetable", "variety"))
 ```
->  Some vegetables, although the harvest date and weight are all the same, there are more than one different plots. This will be a problem because there will be a row for each plot. This will happen every time that vegetable variety is harvested. There were also vegetable varieties that were planted on multiple dates. This will lead to a similar problem.It is hard to decide how to fix the problem at this point, since we haven’t figured out which plots the weights belong to.
+>  Some vegetables, although the harvest date and weight are all the same, there are more than one different plots. This will be a problem because there will be a row for each plot. This will happen every time that vegetable variety is harvested. There were also vegetable varieties that were planted on multiple dates. This will lead to a similar problem. It is hard to decide how to fix the problem at this point since we haven’t figured out which plots the weights belong to. However, one possible way to fix it is to put all the plots into one row and sum up all the seeds planted in different plots into one number as well. For example ,
 
-
+![Example](C:\Users\Owner\OneDrive\Documents\stat112\GitHub\exercise\stat112-exercise3\exercise3 2 EG.png)
 
   3. I would like to understand how much money I "saved" by gardening, for each vegetable type. Describe how I could use the `garden_harvest` and `garden_spending` datasets, along with data from somewhere like [this](https://products.wholefoodsmarket.com/search?sort=relevance&store=10542) to answer this question. You can answer this in words, referencing various join functions. You don't need R code but could provide some if it's helpful.
   
@@ -363,7 +363,7 @@ new_breed_rank_all %>%
   labs(title = "Breeds Ranked By Years", x = NULL, y =
          "Breeds")
 ```
-> Assigned different colors for each rank manually. So that the rank could be more explicit and easier for the viewer to locate. For example, red for the highest rank, blue for the second highest.
+> Assigned different sizes of dots for each rank . So that the rank could be more explicit and easier for the viewer to locate. For example, the largest dot for the highest rank, the second largest one for the second highest.
 
   19. Create your own! Requirements: use a `join` or `pivot` function (or both, if you'd like), a `str_XXX()` function, and a `fct_XXX()` function to create a graph using any of the dog datasets. One suggestion is to try to improve the graph you created for the Tidy Tuesday assignment. If you want an extra challenge, find a way to use the dog images in the `breed_rank_all` file - check out the `ggimage` library and [this resource](https://wilkelab.org/ggtext/) for putting images as labels.
   
