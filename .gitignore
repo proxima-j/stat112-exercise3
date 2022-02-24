@@ -26,5 +26,4 @@ vignettes/*.pdf
 *.knit.md
 # R Environment Variables
 .Renviron
-03_exercises.md
 03_exercises_files
