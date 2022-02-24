@@ -233,9 +233,7 @@ hMTrip %>%
   geom_density(
     aes(x = times),
     fill = "deepskyblue4",
-    color = "#e9ecef",
-    alpha = 0.9,
-    adjust = 0.5
+    color = "#e9ecef"
   ) +
   labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
          NULL)
@@ -245,40 +243,95 @@ hMTrip %>%
   9. A bar graph of the events versus day of the week. Put day on the y-axis.
   
 ```{r}
-wTrip<-Trips %>% 
-   mutate(weekday = wday(
-    ymd(sdate),
-    label = TRUE,
-    abbr = TRUE,
-    week_start = 7
-  ))
+wTrip <- Trips %>%
+  mutate(weekday = wday(sdate,
+         label = TRUE,
+         abbr = TRUE))
+
+wTrip %>%
+  ggplot()+
+  geom_bar(aes(y=fct_rev(weekday)),color = "white",fill="deepskyblue4")+
+  labs(title = "Number of Events On Each day of Week",x=NULL, y=NULL) 
 ```
+>According to the bar plot, most trips occurred on Friday (about 1500 times) and least on Sunday (about 1250 times). However, the number of trips each day of the week does not show much difference even between Fri and Sun.
   
   10. Facet your graph from exercise 8. by day of the week. Is there a pattern?
   
-```{r}
+```{r, fig.height=10,fig.width=10}
+fTrip<-hMTrip %>% 
+   mutate(weekday = wday(sdate,
+         label = TRUE,
+         abbr = TRUE))
 
+
+fTrip %>%
+  ggplot() +
+  geom_density(
+    aes(x = times),
+    fill = "deepskyblue4",
+    color = "#e9ecef"
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ weekday)+
+  theme_minimal()
 ```
+> Yes. The patterns of Saturday and Sunday are very similar which are left-skewed and bimodal. By contrast, the patterns for weekdays are multimodal and very slightly left-skewed.
   
 The variable `client` describes whether the renter is a regular user (level `Registered`) or has not joined the bike-rental organization (`Causal`). The next set of exercises investigate whether these two different categories of users show different rental behavior and how `client` interacts with the patterns you found in the previous exercises. 
 
   11. Change the graph from exercise 10 to set the `fill` aesthetic for `geom_density()` to the `client` variable. You should also set `alpha = .5` for transparency and `color=NA` to suppress the outline of the density function.
   
-```{r}
-
+```{r, fig.height=10,fig.width=8}
+fTrip %>%
+  ggplot() +
+  geom_density(
+    aes(x = times,fill = client),
+    color = NA,
+    alpha = 0.5,
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ weekday)
 ```
+> The rental behavior for the two groups of clients is different. For the regular users who coherent with the pattern in problem 11 which patterns of weekends are different from the weekdays. By contrast, the patterns for weekdays are multimodel and very slightly left-skewed. However, for those who haven't joined the bike-rental organization, the rental behavior is very similar every day-- it shows a unimodal pattern from Sun through Mon.
 
   12. Change the previous graph by adding the argument `position = position_stack()` to `geom_density()`. In your opinion, is this better or worse in terms of telling a story? What are the advantages/disadvantages of each?
   
 ```{r}
-
+fTrip %>%
+  ggplot() +
+  geom_density(
+    aes(x = times,fill = client),
+    color = NA,
+    alpha = 0.5,
+    position = position_stack()
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ weekday)
 ```
+>In my opinion, I think it depends on the situation, since the graph in problem 11 is better for comparing the differences of distribution of times between the two groups while this one is more appropriate to look over the overall distribution and compare the proportion of the two groups at a particular time.
   
   13. In this graph, go back to using the regular density plot (without `position = position_stack()`). Add a new variable to the dataset called `weekend` which will be "weekend" if the day is Saturday or Sunday and  "weekday" otherwise (HINT: use the `ifelse()` function and the `wday()` function from `lubridate`). Then, update the graph from the previous problem by faceting on the new `weekend` variable. 
   
 ```{r}
+wT<-fTrip %>%
+  mutate(weekend=ifelse(weekday%in%c("Sat","Sun"), "weekend","weekday"))
+
+wT%>%
+  ggplot() +
+  geom_density(
+    aes(x = times,fill = client),
+    color = NA,
+    alpha = 0.5
+  ) +
+  labs(title = "Distrubution of Rental Started Time For Events", x = "Rental Started Time(Hour)", y =
+         NULL) +
+  facet_wrap( ~ weekend)
 
 ```
+>Coherent with the graphs from the previous questions-- for registered clients, it shows a multimodal pattern on weekdays and bimodal on the weekend while for casual clients it shows a unimodal pattern for both weekdays and weekends.
   
   14. Change the graph from the previous problem to facet on `client` and fill with `weekday`. What information does this graph tell you that the previous didn't? Is one graph better than the other?
   
